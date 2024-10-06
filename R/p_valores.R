@@ -25,25 +25,21 @@ p_valores = function(x, y) {
   # Calcular X'X
   XtX = t(X) %*% X
 
-  # Verificar se a matriz é singular
-  if (det(XtX) == 0) {
-    # Se for singular, aplicar regularização Ridge
+  # Verificar se a matriz é singular ou mal-condicionada
+  if (det(XtX) == 0 || rcond(XtX) < 1e-10) {
+    # Aplicar regularização Ridge
     lambda = 1e-4 * max(abs(diag(XtX)))  # Ajustar lambda dinamicamente
     XtX_ridge = XtX + diag(lambda, ncol(XtX))
     beta = solve(XtX_ridge) %*% (t(X) %*% y)
-
-    # Calcular a inversa da ridge
     inv_xtx = solve(XtX_ridge)
   } else {
     # Sem regularização
-    beta = betas(x,y)
-
-    # calculo de inversa
+    beta = betas(x, y)
     inv_xtx = solve(XtX)
   }
 
   # Calcular variância dos resíduos
-  residuos = residuos(x,y)
+  residuos = residuos(x, y)
   sigma2 = sum(residuos^2) / (n - p)
 
   # Calcular os erros padrão dos betas

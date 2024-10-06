@@ -25,14 +25,14 @@ betas = function(x, y) {
 
   XtX = t(k) %*% k
 
-  if (det(XtX) == 0) {
-    # Definir lambda automaticamente
-    lambda = 1e-4 * max(abs(diag(XtX)))
-
-    # Aplicar regularização Ridge sem imprimir avisos
+  # Verificar se a matriz XtX é singular ou mal-condicionada
+  if (det(XtX) == 0 || rcond(XtX) < 1e-10) {
+    # Se for singular ou mal-condicionada, aplicar regularização Ridge
+    lambda = 1e-4 * max(abs(diag(XtX)))  # Definir lambda pequeno
     XtX_ridge = XtX + diag(lambda, ncol(XtX))
     return(solve(XtX_ridge) %*% (t(k) %*% y))
   } else {
+    # Resolver normalmente se a matriz não for singular
     return(solve(XtX) %*% (t(k) %*% y))
   }
 }

@@ -2,54 +2,44 @@ library(testthat)
 
 # Teste para Coluna Constante
 test_that("Teste com coluna constante", {
-  X <- matrix(c(rep(1, 100), rep(3, 100)), ncol = 2)  # Primeira coluna é o intercepto, a segunda é constante
-  Y <- rnorm(100)
-
-  # Verificar se a função executa sem erro e retorna coeficientes
-  expect_silent({
-    resultado <- regressao(list(X = X, Y = Y), 0)
-  })
-
-  # Verificar se o Ridge foi aplicado (verifique os coeficientes e se lambda foi impresso)
-})
-
-# Teste para Posto Incompleto
-test_that("Teste com posto incompleto", {
-  X <- matrix(c(rep(1, 100), rnorm(100), rnorm(100)), ncol = 3)
-  X[, 3] <- X[, 2]  # Tornar a terceira coluna igual à segunda (linearmente dependente)
-  Y <- rnorm(100)
-
-  # Verificar se a função executa sem erro e retorna coeficientes
-  expect_silent({
-    resultado <- regressao(list(X = X, Y = Y), 0)
-  })
-
-  # Verificar se o Ridge foi aplicado
-})
-
-# Teste para Resíduos Zero
-test_that("Teste com resíduos zero", {
+  # Coluna X1 é constante
   X <- matrix(c(rep(1, 100), rnorm(100)), ncol = 2)
-  beta <- c(2, 3)
-  Y <- X %*% beta  # Gerar Y como uma combinação linear perfeita de X
-
-  # Verificar se a função executa sem erro e retorna coeficientes
-  expect_silent({
-    resultado <- regressao(list(X = X, Y = Y), 0)
-  })
-
-  # Verificar se o Ridge foi aplicado
-})
-
-# Teste para Gráfico com Matriz Singular
-test_that("Teste gráfico com matriz singular", {
-  X <- matrix(c(rep(1, 100), rep(3, 100)), ncol = 2)  # Matriz singular
   Y <- rnorm(100)
 
-  # Verificar se a função executa sem erro e retorna coeficientes
-  expect_silent({
-    resultado <- regressao(list(X = X, Y = Y), 0)
-  })
+  modelo_resultado1 <- modelo(data.frame(X1 = X[,1], X2 = X[,2], Y = Y), Y ~ X1 + X2)
 
-  # Verificar se o Ridge foi aplicado
+  expect_warning({
+    regressao(modelo_resultado1, 1)
+  }, regexp = "A coluna de X é constante")
+})
+
+test_that("Teste com posto incompleto", {
+  # X1 e X2 são linearmente dependentes (posto incompleto) sem serem constantes
+  X <- matrix(c(1:100, 2:101), ncol = 2)  # X2 é dependente de X1 (X2 = X1 + 1)
+  Y <- rnorm(100)
+
+  modelo_resultado2 <- modelo(data.frame(X1 = X[,1], X2 = X[,2], Y = Y), Y ~ X1 + X2)
+
+  # Testa apenas se a função emite o warning específico de regularização Ridge
+  expect_warning(
+    regressao(modelo_resultado2, 1),
+    regexp = "A matriz não tem posto completo. Aplicada regularização Ridge, o resultado pode não ser eficaz."
+  )
+})
+
+
+
+
+# Teste para Resíduos Zero (ajuste perfeito, mas posto completo)
+test_that("Teste com resíduos zero", {
+  # X1 e X2 são independentes
+  X <- matrix(c(1:100, runif(100, 50, 150)), ncol = 2)  # X2 é independente de X1
+  beta <- c(2, 3)
+  Y <- X %*% beta  # Y é uma combinação linear perfeita de X1 e X2
+
+  modelo_resultado3 <- modelo(data.frame(X1 = X[,1], X2 = X[,2], Y = Y), Y ~ X1 + X2)
+
+  expect_warning({
+    regressao(modelo_resultado3, 1)
+  }, regexp = "Os resíduos são todos iguais a zero")
 })
